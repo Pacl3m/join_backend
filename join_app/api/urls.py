@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import CardList, CategoryViewSet, ContactViewSet, ContactViewDetail, CardViewDetail, CustomLoginView, RegisterView
+from .views import CardList, CategoryViewSet, ContactViewSet, ContactViewDetail, CardViewDetail, CustomLoginView, RegisterView, check_token
 
 
 urlpatterns = [
@@ -11,4 +11,5 @@ urlpatterns = [
     path('categories/', CategoryViewSet.as_view()),
     path('login/', CustomLoginView.as_view()),
     path('register/', RegisterView.as_view()),
+    path('check_token/', check_token, name='check_token'),
 ]

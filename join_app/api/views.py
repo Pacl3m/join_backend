@@ -6,6 +6,11 @@ from join_app.models import Card, Category, Contact
 from .serializers import CardSerializer, CategorySerializer, ContactSerializer, RegistrationSerializer
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class CardList(generics.ListCreateAPIView):
@@ -46,23 +51,34 @@ class CustomLoginView(APIView):
         user = authenticate(request, username=email, password=password)
 
         if user:
-            return Response({"success": True, "email": user.email, "Vorname": user.first_name, "Nachname": user.last_name})
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({"success": True, "email": user.email, "Vorname": user.first_name, "Nachname": user.last_name, "token": token.key})
         else:
             return Response({"success": False, "message": "Falsche Login-Daten!"}, status=400)
 
 
-class RegisterView(APIView):
+class RegisterView(ObtainAuthToken):
 
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
         if serializer.is_valid():
             saved_account = serializer.save()
-
-            return Response({
+            token, created = Token.objects.get_or_create(user=saved_account)
+            data = {
                 "username": saved_account.username,
                 "email": saved_account.email,
                 "first_name": saved_account.first_name,
-                "last_name": saved_account.last_name
-            }, status=status.HTTP_201_CREATED)
+                "last_name": saved_account.last_name,
+                'token': token.key
+            }
+        else:
+            data = serializer.errors
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data)
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def check_token(request):
+    return Response({"isAuthenticated": True})
